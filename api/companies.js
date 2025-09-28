@@ -18,12 +18,13 @@ async function handler(req, res) {
         const { method, body } = req;
 
         if (method === 'GET') {
-            // Get all companies from CorpTools API
+            // Get all companies from CorpTools API (no auth required)
+            console.log('Getting companies from CorpTools API...');
             const result = await request.get('/companies');
             res.status(200).json(result);
         } 
         else if (method === 'POST') {
-            // Create new company via CorpTools API
+            // Create new company via CorpTools API (no auth required)
             const { name, state = 'Wyoming', entityType = 'Limited Liability Company' } = body;
             
             if (!name) {
@@ -41,6 +42,7 @@ async function handler(req, res) {
                 }]
             };
 
+            console.log('Creating company via CorpTools API...', companyData);
             const result = await request.post('/companies', companyData);
             res.status(200).json(result);
         } 
