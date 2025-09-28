@@ -3,6 +3,9 @@ const axios = require('axios');
 const CryptoJS = require('crypto-js');
 const jwt_encode = require('jwt-encode');
 
+// Import shared user storage
+const { addUser, findUserByEmail } = require('./users');
+
 // CorpTools API Configuration
 const CORPTOOLS_API_URL = 'https://api.corporatetools.com';
 const ACCESS_KEY = process.env.CORPTOOLS_ACCESS_KEY || '88ff99bede797aaae02a0c21e5feba5b97888c9dc497742bbf9030a89a6795a464a38ce0bf0fdb14';
@@ -115,10 +118,70 @@ async function handler(req, res) {
                 result = await makeCorpToolsRequest('GET', '/payment-methods');
                 break;
 
+            case 'register':
+                if (method === 'POST') {
+                    // Register new user
+                    const { firstName, lastName, email, password } = body;
+                    
+                    if (!firstName || !lastName || !email || !password) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'First name, last name, email, and password are required'
+                        });
+                    }
+
+                    // Check if user already exists
+                    const existingUser = findUserByEmail(email);
+                    if (existingUser) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'User with this email already exists'
+                        });
+                    }
+
+                    // Create new user
+                    const newUser = {
+                        firstName,
+                        lastName,
+                        email,
+                        password, // In production, hash this password
+                        createdAt: new Date().toISOString(),
+                        status: 'active'
+                    };
+
+                    // Add to users array
+                    addUser(newUser);
+
+                    result = {
+                        success: true,
+                        data: {
+                            message: 'User account created successfully',
+                            user: {
+                                firstName: newUser.firstName,
+                                lastName: newUser.lastName,
+                                email: newUser.email,
+                                createdAt: newUser.createdAt,
+                                status: newUser.status
+                            },
+                            nextSteps: [
+                                'You can now login with your credentials',
+                                'Use the login form to access your account',
+                                'Contact support if you need CorpTools API access'
+                            ]
+                        }
+                    };
+                } else {
+                    return res.status(405).json({
+                        success: false,
+                        error: 'Method not allowed'
+                    });
+                }
+                break;
+
             default:
                 return res.status(400).json({
                     success: false,
-                    error: 'Invalid action. Available actions: account, companies, login, services, invoices, payment-methods'
+                    error: 'Invalid action. Available actions: account, companies, login, register, services, invoices, payment-methods'
                 });
         }
 
