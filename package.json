@@ -17,7 +17,7 @@
     "jwt-encode": "^1.0.1"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "keywords": [
     "corptools",
