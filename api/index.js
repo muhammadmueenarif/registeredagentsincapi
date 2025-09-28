@@ -75,7 +75,7 @@ async function handler(req, res) {
         const { method, query, body } = req;
         const { action } = query;
 
-        console.log(`API Request: ${method} ${action}`, { query, body });
+        console.log(`API Request: ${method} ${action}`, { query, body }); // Updated
 
         let result;
 
