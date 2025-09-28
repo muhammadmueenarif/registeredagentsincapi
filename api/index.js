@@ -1,55 +1,8 @@
-// CorpTools API Server for Vercel
-const axios = require('axios');
-const CryptoJS = require('crypto-js');
-const jwt_encode = require('jwt-encode');
+// Main API Handler - Routes between local and external APIs
+const { request } = require('./base_request');
 
 // Import shared user storage
 const { addUser, findUserByEmail } = require('./users');
-
-// CorpTools API Configuration
-const CORPTOOLS_API_URL = 'https://api.corporatetools.com';
-const ACCESS_KEY =   '88ff99bede797aaae02a0c21e5feba5b97888c9dc497742bbf9030a89a6795a464a38ce0bf0fdb14';
-const SECRET_KEY =   '973cbb1d5a284c2a77fd90688f5412a39accfca933744be402901e97dd574afbfa7d19809c4ed730';
-
-// Generate JWT token for CorpTools API
-function generateToken(path, body = null) {
-    const header = { access_key: ACCESS_KEY };
-    const payload = {
-        path: path,
-        content: body ? CryptoJS.SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Hex) : CryptoJS.SHA256('').toString(CryptoJS.enc.Hex)
-    };
-    
-    return jwt_encode(payload, SECRET_KEY, header);
-}
-
-// Make request to CorpTools API
-async function makeCorpToolsRequest(method, endpoint, data = null) {
-    const token = generateToken(endpoint, data);
-    const url = CORPTOOLS_API_URL + endpoint;
-    
-    try {
-        const response = await axios({
-            method: method,
-            url: url,
-            data: data,
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        return {
-            success: true,
-            data: response.data
-        };
-    } catch (error) {
-        console.error('CorpTools API Error:', error.response?.data || error.message);
-        return {
-            success: false,
-            error: error.response?.data || error.message
-        };
-    }
-}
 
 // CORS headers - Allow all requests
 const corsHeaders = {
@@ -83,43 +36,12 @@ async function handler(req, res) {
 
         switch (action) {
             case 'account':
-                result = await makeCorpToolsRequest('GET', '/account');
+                result = await request.get('/account');
                 break;
 
             case 'companies':
                 if (method === 'GET') {
-                    // Try CorpTools API first, fallback to mock data
-                    const corpToolsResult = await makeCorpToolsRequest('GET', '/companies');
-                    if (corpToolsResult.success) {
-                        result = corpToolsResult;
-                    } else {
-                        // Mock companies data for testing
-                        result = {
-                            success: true,
-                            data: {
-                                companies: [
-                                    {
-                                        id: 1,
-                                        name: "Sample Company LLC",
-                                        home_state: "Wyoming",
-                                        entity_type: "Limited Liability Company",
-                                        status: "active",
-                                        created_at: "2025-01-01T00:00:00Z"
-                                    },
-                                    {
-                                        id: 2,
-                                        name: "Test Corporation",
-                                        home_state: "Delaware",
-                                        entity_type: "Corporation",
-                                        status: "active",
-                                        created_at: "2025-01-15T00:00:00Z"
-                                    }
-                                ],
-                                total: 2,
-                                message: "Mock data - CorpTools API unavailable"
-                            }
-                        };
-                    }
+                    result = await request.get('/companies');
                 } else if (method === 'POST') {
                     const { name, state = 'Wyoming', entityType = 'Limited Liability Company' } = body;
                     
@@ -130,7 +52,6 @@ async function handler(req, res) {
                         });
                     }
 
-                    // Try CorpTools API first, fallback to mock response
                     const companyData = {
                         companies: [{
                             name: name,
@@ -139,26 +60,7 @@ async function handler(req, res) {
                         }]
                     };
                     
-                    const corpToolsResult = await makeCorpToolsRequest('POST', '/companies', companyData);
-                    if (corpToolsResult.success) {
-                        result = corpToolsResult;
-                    } else {
-                        // Mock company creation response
-                        result = {
-                            success: true,
-                            data: {
-                                message: "Company created successfully (Mock response - CorpTools API unavailable)",
-                                company: {
-                                    id: Math.floor(Math.random() * 1000) + 100,
-                                    name: name,
-                                    home_state: state,
-                                    entity_type: entityType,
-                                    status: "pending",
-                                    created_at: new Date().toISOString()
-                                }
-                            }
-                        };
-                    }
+                    result = await request.post('/companies', companyData);
                 }
                 break;
 
@@ -201,15 +103,15 @@ async function handler(req, res) {
                 break;
 
             case 'services':
-                result = await makeCorpToolsRequest('GET', '/services');
+                result = await request.get('/services');
                 break;
 
             case 'invoices':
-                result = await makeCorpToolsRequest('GET', '/invoices');
+                result = await request.get('/invoices');
                 break;
 
             case 'payment-methods':
-                result = await makeCorpToolsRequest('GET', '/payment-methods');
+                result = await request.get('/payment-methods');
                 break;
 
             case 'register':

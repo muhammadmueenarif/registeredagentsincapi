@@ -1,4 +1,5 @@
 // Local development server for testing CorpTools API
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -6,6 +7,7 @@ const path = require('path');
 // Import our API handlers
 const authHandler = require('./api/auth');
 const companiesHandler = require('./api/companies');
+const companyHandler = require('./api/company');
 const indexHandler = require('./api/index');
 const registerHandler = require('./api/register');
 
@@ -22,6 +24,8 @@ app.get('/api/auth', authHandler);
 app.post('/api/auth', authHandler);
 app.get('/api/companies', companiesHandler);
 app.post('/api/companies', companiesHandler);
+app.get('/api/companies/:id', companyHandler);
+app.patch('/api/companies/:id', companyHandler);
 app.post('/api/register', registerHandler);
 app.get('/api', indexHandler);
 app.post('/api', indexHandler);
@@ -51,6 +55,8 @@ app.listen(PORT, () => {
     console.log(`   POST /api/register    - Create user account`);
     console.log(`   GET  /api/companies   - Get companies`);
     console.log(`   POST /api/companies   - Create company`);
+    console.log(`   GET  /api/companies/:id - Get specific company`);
+    console.log(`   PATCH /api/companies/:id - Update company`);
     console.log(`   GET  /api?action=services - Get services`);
     console.log(`   GET  /api?action=invoices - Get invoices`);
 });

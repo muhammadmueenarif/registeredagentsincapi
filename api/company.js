@@ -1,4 +1,4 @@
-// CorpTools Companies API Endpoint
+// CorpTools Individual Company API Endpoint
 const { request } = require('./base_request');
 
 async function handler(req, res) {
@@ -15,35 +15,26 @@ async function handler(req, res) {
     }
 
     try {
-        const { method, body } = req;
+        const { method, params, body } = req;
+        const companyId = params?.id || req.query?.id;
+
+        if (!companyId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Company ID is required'
+            });
+        }
 
         if (method === 'GET') {
-            // Get all companies from CorpTools API
-            const result = await request.get('/companies');
+            // Get specific company by ID from CorpTools API
+            const result = await request.get(`/companies/${companyId}`);
             res.status(200).json(result);
         } 
-        else if (method === 'POST') {
-            // Create new company via CorpTools API
-            const { name, state = 'Wyoming', entityType = 'Limited Liability Company' } = body;
-            
-            if (!name) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Company name is required'
-                });
-            }
-
-            const companyData = {
-                companies: [{
-                    name: name,
-                    home_state: state,
-                    entity_type: entityType
-                }]
-            };
-
-            const result = await request.post('/companies', companyData);
+        else if (method === 'PATCH') {
+            // Update company via CorpTools API
+            const result = await request.patch(`/companies/${companyId}`, body);
             res.status(200).json(result);
-        } 
+        }
         else {
             res.status(405).json({
                 success: false,
@@ -52,7 +43,7 @@ async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error('Companies API Error:', error);
+        console.error('Company API Error:', error);
         res.status(500).json({
             success: false,
             error: 'Internal server error',
