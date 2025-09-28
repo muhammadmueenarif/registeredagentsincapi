@@ -104,8 +104,40 @@ async function handler(req, res) {
 
             case 'login':
                 const { email, password } = body;
-                const loginData = { email, password };
-                result = await makeCorpToolsRequest('POST', '/auth/login', loginData);
+                
+                if (!email || !password) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Email and password are required'
+                    });
+                }
+
+                // Check local user credentials
+                const { findUserByCredentials } = require('./users');
+                const user = findUserByCredentials(email, password);
+                
+                if (user) {
+                    result = {
+                        success: true,
+                        data: {
+                            message: 'Login successful',
+                            user: {
+                                firstName: user.firstName,
+                                lastName: user.lastName,
+                                email: user.email,
+                                status: user.status,
+                                createdAt: user.createdAt
+                            },
+                            token: 'local-auth-token', // In production, generate a real JWT token
+                            expiresIn: '24h'
+                        }
+                    };
+                } else {
+                    result = {
+                        success: false,
+                        error: 'Invalid email or password'
+                    };
+                }
                 break;
 
             case 'services':
