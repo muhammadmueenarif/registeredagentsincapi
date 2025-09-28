@@ -1,52 +1,6 @@
-// CorpTools User Registration API Endpoint
-const axios = require('axios');
-const CryptoJS = require('crypto-js');
-const jwt_encode = require('jwt-encode');
-
-const CORPTOOLS_API_URL = 'https://api.corporatetools.com';
-const ACCESS_KEY ='88ff99bede797aaae02a0c21e5feba5b97888c9dc497742bbf9030a89a6795a464a38ce0bf0fdb14';
-const SECRET_KEY = '973cbb1d5a284c2a77fd90688f5412a39accfca933744be402901e97dd574afbfa7d19809c4ed730';
-
+// Local User Registration API Endpoint
 // Import shared user storage
 const { addUser, findUserByEmail } = require('./users');
-
-function generateToken(path, body = null) {
-    const header = { access_key: ACCESS_KEY };
-    const payload = {
-        path: path,
-        content: body ? CryptoJS.SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Hex) : CryptoJS.SHA256('').toString(CryptoJS.enc.Hex)
-    };
-    
-    return jwt_encode(payload, SECRET_KEY, header);
-}
-
-async function makeCorpToolsRequest(method, endpoint, data = null) {
-    const token = generateToken(endpoint, data);
-    const url = CORPTOOLS_API_URL + endpoint;
-    
-    try {
-        const response = await axios({
-            method: method,
-            url: url,
-            data: data,
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        return {
-            success: true,
-            data: response.data
-        };
-    } catch (error) {
-        console.error('CorpTools API Error:', error.response?.data || error.message);
-        return {
-            success: false,
-            error: error.response?.data || error.message
-        };
-    }
-}
 
 async function handler(req, res) {
     // CORS headers - Allow all requests

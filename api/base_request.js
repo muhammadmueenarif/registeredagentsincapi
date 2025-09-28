@@ -1,4 +1,10 @@
-require('dotenv').config();
+// Try to load dotenv, but don't fail if it's not available
+try {
+    require('dotenv').config();
+} catch (e) {
+    // dotenv not available, continue with environment variables
+}
+
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
 const jwt_encode = require('jwt-encode');
@@ -106,7 +112,7 @@ module.exports = {
     generateToken,
     makeCorpToolsRequest,
     request,
-    CORPTOOLS_API_URL,
+    API_URL,
     ACCESS_KEY,
     SECRET_KEY
 };

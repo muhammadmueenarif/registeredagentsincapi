@@ -1,5 +1,10 @@
 // Local development server for testing CorpTools API
-require('dotenv').config();
+// Try to load dotenv, but don't fail if it's not available
+try {
+    require('dotenv').config();
+} catch (e) {
+    // dotenv not available, continue with environment variables
+}
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
