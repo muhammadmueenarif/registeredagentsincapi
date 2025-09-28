@@ -8,8 +8,8 @@ const { addUser, findUserByEmail } = require('./users');
 
 // CorpTools API Configuration
 const CORPTOOLS_API_URL = 'https://api.corporatetools.com';
-const ACCESS_KEY = process.env.CORPTOOLS_ACCESS_KEY || '88ff99bede797aaae02a0c21e5feba5b97888c9dc497742bbf9030a89a6795a464a38ce0bf0fdb14';
-const SECRET_KEY = process.env.CORPTOOLS_SECRET_KEY || '973cbb1d5a284c2a77fd90688f5412a39accfca933744be402901e97dd574afbfa7d19809c4ed730';
+const ACCESS_KEY =   '88ff99bede797aaae02a0c21e5feba5b97888c9dc497742bbf9030a89a6795a464a38ce0bf0fdb14';
+const SECRET_KEY =   '973cbb1d5a284c2a77fd90688f5412a39accfca933744be402901e97dd574afbfa7d19809c4ed730';
 
 // Generate JWT token for CorpTools API
 function generateToken(path, body = null) {
