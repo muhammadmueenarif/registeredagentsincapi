@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CorpTools API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #007cba; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #005a87; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; max-height: 300px; }
+        .result { margin: 10px 0; }
+        .error { color: red; }
+        .success { color: green; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>CorpTools API Test</h1>
+    <p><strong>API Base URL:</strong> <span id="api-url">https://your-app.vercel.app/api</span></p>
+    
+    <div>
+        <h2>1. Get Account</h2>
+        <button onclick="getAccount()">Get Account</button>
+        <div id="account-result" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>2. Create Account</h2>
+        <input type="text" id="first-name" placeholder="First Name" value="John">
+        <input type="text" id="last-name" placeholder="Last Name" value="Doe">
+        <input type="email" id="reg-email" placeholder="Email" value="john.doe@example.com">
+        <input type="password" id="reg-password" placeholder="Password" value="password123">
+        <button onclick="register()">Create Account</button>
+        <div id="register-result" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>3. Login</h2>
+        <input type="email" id="email" placeholder="Email" value="hostwinds8989@proton.me">
+        <input type="password" id="password" placeholder="Password" value="Anhy123456@">
+        <button onclick="login()">Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>4. Get Companies</h2>
+        <button onclick="getCompanies()">Get Companies</button>
+        <div id="companies-result" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>5. Create Company</h2>
+        <input type="text" id="company-name" placeholder="Company Name" value="Test Company LLC">
+        <input type="text" id="company-state" placeholder="State" value="Wyoming">
+        <button onclick="createCompany()">Create Company</button>
+        <div id="create-result" class="result"></div>
+    </div>
+
+    <script>
+        // Update this with your local or Vercel app URL
+        const API_BASE = 'http://localhost:3000/api';
+        
+        // Update the display
+        document.getElementById('api-url').textContent = API_BASE;
+        
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error' : 'success';
+            element.innerHTML = `<pre class="${className}">${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        // 1. Get Account
+        async function getAccount() {
+            try {
+                const response = await fetch(`${API_BASE}/auth`);
+                const result = await response.json();
+                displayResult('account-result', result);
+            } catch (error) {
+                displayResult('account-result', { error: error.message }, true);
+            }
+        }
+        
+        // 2. Register User
+        async function register() {
+            const firstName = document.getElementById('first-name').value;
+            const lastName = document.getElementById('last-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            alert('password:   - ' +password);
+            try {
+                const response = await fetch(`${API_BASE}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firstName, lastName, email, password })
+                });
+                const result = await response.json();
+                displayResult('register-result', result);
+            } catch (error) {
+                displayResult('register-result', { error: error.message }, true);
+            }
+        }
+        
+        // 3. Login
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await response.json();
+                displayResult('login-result', result);
+            } catch (error) {
+                displayResult('login-result', { error: error.message }, true);
+            }
+        }
+        
+        // 4. Get Companies
+        async function getCompanies() {
+            try {
+                const response = await fetch(`${API_BASE}/companies`);
+                const result = await response.json();
+                displayResult('companies-result', result);
+            } catch (error) {
+                displayResult('companies-result', { error: error.message }, true);
+            }
+        }
+        
+        // 5. Create Company
+        async function createCompany() {
+            const name = document.getElementById('company-name').value;
+            const state = document.getElementById('company-state').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/companies`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, state })
+                });
+                const result = await response.json();
+                displayResult('create-result', result);
+            } catch (error) {
+                displayResult('create-result', { error: error.message }, true);
+            }
+        }
+        
+        // Show instructions
+        document.addEventListener('DOMContentLoaded', function() {
+            const instructions = `
+                <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                    <h3>🚀 Setup Instructions:</h3>
+                    <ol>
+                        <li><strong>Deploy to Vercel:</strong> <code>npx vercel</code></li>
+                        <li><strong>Set Environment Variables:</strong> Add your CorpTools API keys in Vercel dashboard</li>
+                        <li><strong>Update API URL:</strong> Change the API_BASE variable to your Vercel app URL</li>
+                        <li><strong>Test:</strong> Click the buttons above to test your API</li>
+                    </ol>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('afterbegin', instructions);
+        });
+    </script>
+</body>
+</html>
