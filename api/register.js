@@ -49,13 +49,15 @@ async function makeCorpToolsRequest(method, endpoint, data = null) {
 }
 
 async function handler(req, res) {
-    // CORS headers
+    // CORS headers - Allow all requests
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
 
     if (req.method === 'OPTIONS') {
-        res.status(200).json({ message: 'CORS preflight' });
+        res.status(200).json({ message: 'CORS preflight successful' });
         return;
     }
 
