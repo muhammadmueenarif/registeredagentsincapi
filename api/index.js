@@ -51,25 +51,27 @@ async function makeCorpToolsRequest(method, endpoint, data = null) {
     }
 }
 
-// CORS headers
+// CORS headers - Allow all requests
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400'
 };
 
 // Main API handler
 async function handler(req, res) {
-    // Handle CORS
-    if (req.method === 'OPTIONS') {
-        res.status(200).json({ message: 'CORS preflight' });
-        return;
-    }
-
-    // Set CORS headers
+    // Set CORS headers for all requests
     Object.keys(corsHeaders).forEach(key => {
         res.setHeader(key, corsHeaders[key]);
     });
+
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).json({ message: 'CORS preflight successful' });
+        return;
+    }
 
     try {
         const { method, query, body } = req;
