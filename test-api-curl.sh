@@ -66,7 +66,13 @@ register_data='{
     "firstName": "Test",
     "lastName": "User",
     "email": "test.user@example.com",
-    "password": "testpassword123"
+    "password": "testpassword123",
+    "phone": "555-123-4567",
+    "country": "United States",
+    "address": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001"
 }'
 test_endpoint "POST" "$API_URL/register" "$register_data" "Register New User (Local)"
 
@@ -84,12 +90,22 @@ test_endpoint "GET" "$API_URL/companies" "" "Get All Companies from CorpTools AP
 
 # 6. Create Company (CorpTools API)
 echo -e "\n${YELLOW}6. CREATE COMPANY${NC}"
+# Single jurisdiction company
 company_data='{
     "name": "Test Company LLC",
-    "state": "Wyoming",
-    "entityType": "Limited Liability Company"
+    "entity_type": "Limited Liability Company",
+    "home_state": "Wyoming"
 }'
-test_endpoint "POST" "$API_URL/companies" "$company_data" "Create New Company via CorpTools API"
+test_endpoint "POST" "$API_URL/companies" "$company_data" "Create Single-State Company via CorpTools API"
+
+# Multi-jurisdiction company
+multi_state_company_data='{
+    "name": "Multi-State Company LLC",
+    "entity_type": "Limited Liability Company",
+    "jurisdictions": ["Delaware", "California", "New York"],
+    "duplicate_name_allowed": false
+}'
+test_endpoint "POST" "$API_URL/companies" "$multi_state_company_data" "Create Multi-State Company via CorpTools API"
 
 # 7. Get Services (CorpTools API)
 echo -e "\n${YELLOW}7. GET SERVICES${NC}"
@@ -108,14 +124,50 @@ echo -e "\n${YELLOW}10. GET INDIVIDUAL COMPANY${NC}"
 echo "Note: This requires a valid company ID from previous responses"
 test_endpoint "GET" "$API_URL/companies/1" "" "Get Specific Company (ID: 1)"
 
+# 11. Add Payment Method
+echo -e "\n${YELLOW}11. ADD PAYMENT METHOD${NC}"
+payment_data='{
+    "firstName": "John",
+    "lastName": "Doe",
+    "cardNumber": "4111-1111-1111-1111",
+    "securityCode": "123",
+    "expMonth": "12",
+    "expYear": "2029",
+    "useDifferentBilling": false
+}'
+test_endpoint "POST" "$API_URL/payment" "$payment_data" "Add Payment Method"
+
+# 12. Add Payment Method with Billing Address
+echo -e "\n${YELLOW}12. ADD PAYMENT WITH BILLING${NC}"
+payment_billing_data='{
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "cardNumber": "5555-5555-5555-4444",
+    "securityCode": "456",
+    "expMonth": "06",
+    "expYear": "2028",
+    "useDifferentBilling": true,
+    "billingCountry": "United States",
+    "billingAddress": "123 Billing St",
+    "billingCity": "New York",
+    "billingState": "NY",
+    "billingZip": "10001"
+}'
+test_endpoint "POST" "$API_URL/payment" "$payment_billing_data" "Add Payment Method with Billing Address"
+
+# 13. Get Payment Methods
+echo -e "\n${YELLOW}13. GET PAYMENT METHODS${NC}"
+test_endpoint "GET" "$API_URL/payment" "" "Get User Payment Methods"
+
 echo -e "\n${GREEN}🎉 API Testing Complete!${NC}"
 echo "================================================"
 echo "Summary:"
 echo "- Health Check: Basic server status"
 echo "- Account Info: CorpTools API integration"
-echo "- User Registration: Local user management"
+echo "- User Registration: Local user management with contact info"
 echo "- User Login: Local authentication"
-echo "- Companies: CorpTools API company operations"
+echo "- Companies: CorpTools API company operations with jurisdictions"
+echo "- Payment Methods: Local payment details management"
 echo "- Services/Invoices: CorpTools API business data"
 echo ""
 echo "Check the responses above for any errors or issues."

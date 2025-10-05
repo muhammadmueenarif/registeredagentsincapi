@@ -8,9 +8,16 @@ let users = [
         password: 'Anhy123456@', 
         firstName: 'Hostwinds', 
         lastName: 'User',
+        phone: '',
+        country: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
         createdAt: '2025-09-28T00:00:00.000Z',
         status: 'active',
-        companies: [] // Track companies created by this user
+        companies: [], // Track companies created by this user
+        payments: [] // Track payment methods for this user
     }
 ];
 
@@ -20,7 +27,8 @@ function addUser(user) {
     const newUser = {
         ...user,
         id: userId,
-        companies: [] // Initialize empty companies array
+        companies: [], // Initialize empty companies array
+        payments: [] // Initialize empty payments array
     };
     users.push(newUser);
     return newUser;
@@ -56,11 +64,36 @@ function getUserCompanies(userId) {
     return user ? user.companies : [];
 }
 
+function addPaymentToUser(userId, paymentDetails) {
+    const user = findUserById(userId);
+    if (user) {
+        // If this is the first payment method, make it default
+        if (user.payments.length === 0) {
+            paymentDetails.isDefault = true;
+        }
+        
+        user.payments.push(paymentDetails);
+        return true;
+    }
+    return false;
+}
+
+function getUserPayments(userId) {
+    const user = findUserById(userId);
+    return user ? user.payments : [];
+}
+
 function getAllUsers() {
     return users.map(u => ({
         firstName: u.firstName,
         lastName: u.lastName,
         email: u.email,
+        phone: u.phone,
+        country: u.country,
+        address: u.address,
+        city: u.city,
+        state: u.state,
+        zipCode: u.zipCode,
         createdAt: u.createdAt,
         status: u.status
     }));
@@ -73,6 +106,8 @@ module.exports = {
     findUserById,
     addCompanyToUser,
     getUserCompanies,
+    addPaymentToUser,
+    getUserPayments,
     getAllUsers,
     users
 };

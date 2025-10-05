@@ -15,6 +15,7 @@ const companiesHandler = require('./api/companies');
 const companyHandler = require('./api/company');
 const indexHandler = require('./api/index');
 const registerHandler = require('./api/register');
+const paymentHandler = require('./api/payment');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +33,8 @@ app.post('/api/companies', companiesHandler);
 app.get('/api/companies/:id', companyHandler);
 app.patch('/api/companies/:id', companyHandler);
 app.post('/api/register', registerHandler);
+app.get('/api/payment', paymentHandler);
+app.post('/api/payment', paymentHandler);
 app.get('/api', indexHandler);
 app.post('/api', indexHandler);
 
@@ -62,6 +65,8 @@ app.listen(PORT, () => {
     console.log(`   POST /api/companies   - Create company`);
     console.log(`   GET  /api/companies/:id - Get specific company`);
     console.log(`   PATCH /api/companies/:id - Update company`);
+    console.log(`   GET  /api/payment     - Get payment methods`);
+    console.log(`   POST /api/payment     - Add payment method`);
     console.log(`   GET  /api?action=services - Get services`);
     console.log(`   GET  /api?action=invoices - Get invoices`);
 });

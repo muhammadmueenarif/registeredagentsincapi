@@ -19,8 +19,19 @@ async function handler(req, res) {
         const { method, body } = req;
 
         if (method === 'POST') {
-            // Register new user
-            const { firstName, lastName, email, password } = body;
+            // Register new user with contact information
+            const { 
+                firstName, 
+                lastName, 
+                email, 
+                password, 
+                phone, 
+                country, 
+                address, 
+                city, 
+                state, 
+                zipCode 
+            } = body;
             
             if (!firstName || !lastName || !email || !password) {
                 return res.status(400).json({
@@ -38,12 +49,18 @@ async function handler(req, res) {
                 });
             }
 
-            // Create new user
+            // Create new user with contact information
             const newUser = {
                 firstName,
                 lastName,
                 email,
                 password, // In production, hash this password
+                phone: phone || '',
+                country: country || '',
+                address: address || '',
+                city: city || '',
+                state: state || '',
+                zipCode: zipCode || '',
                 createdAt: new Date().toISOString(),
                 status: 'active'
             };
@@ -60,6 +77,12 @@ async function handler(req, res) {
                         firstName: createdUser.firstName,
                         lastName: createdUser.lastName,
                         email: createdUser.email,
+                        phone: createdUser.phone,
+                        country: createdUser.country,
+                        address: createdUser.address,
+                        city: createdUser.city,
+                        state: createdUser.state,
+                        zipCode: createdUser.zipCode,
                         createdAt: createdUser.createdAt,
                         status: createdUser.status
                     },

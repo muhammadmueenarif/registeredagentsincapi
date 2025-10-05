@@ -69,7 +69,13 @@ async function handler(req, res) {
             // Require authentication for creating companies
             authenticateUser(req, res, async () => {
                 try {
-                    const { name, state = 'Wyoming', entityType = 'Limited Liability Company' } = body;
+                    const { 
+                        name, 
+                        entity_type = 'Limited Liability Company',
+                        jurisdictions = [],
+                        home_state = 'Wyoming',
+                        duplicate_name_allowed = false
+                    } = body;
                     
                     if (!name) {
                         return res.status(400).json({
@@ -78,13 +84,37 @@ async function handler(req, res) {
                         });
                     }
 
-                    const companyData = {
-                        companies: [{
-                            name: name,
-                            home_state: state,
-                            entity_type: entityType
-                        }]
-                    };
+                    // Validate jurisdictions vs home_state logic
+                    if (jurisdictions.length > 0 && home_state) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'Provide either jurisdictions array or home_state parameter, but not both'
+                        });
+                    }
+
+                    // Build company data according to CorpTools API
+                    let companyData;
+                    if (jurisdictions.length > 0) {
+                        // Use jurisdictions array
+                        companyData = {
+                            companies: [{
+                                name: name,
+                                entity_type: entity_type,
+                                jurisdictions: jurisdictions
+                            }],
+                            duplicate_name_allowed: duplicate_name_allowed
+                        };
+                    } else {
+                        // Use home_state
+                        companyData = {
+                            companies: [{
+                                name: name,
+                                entity_type: entity_type,
+                                home_state: home_state
+                            }],
+                            duplicate_name_allowed: duplicate_name_allowed
+                        };
+                    }
 
                     console.log('Creating company via CorpTools API for user:', req.user.email, companyData);
                     const result = await request.post('/companies', companyData);

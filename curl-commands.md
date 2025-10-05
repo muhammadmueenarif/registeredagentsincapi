@@ -22,7 +22,13 @@ curl -X POST "https://registeredagentsincapi.vercel.app/api/register" \
     "firstName": "Test",
     "lastName": "User", 
     "email": "test.user@example.com",
-    "password": "testpassword123"
+    "password": "testpassword123",
+    "phone": "555-123-4567",
+    "country": "United States",
+    "address": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001"
   }'
 ```
 
@@ -43,12 +49,23 @@ curl -X GET "https://registeredagentsincapi.vercel.app/api/companies"
 
 ### 6. Create New Company (CorpTools API)
 ```bash
+# Option 1: Single jurisdiction (home_state)
 curl -X POST "https://registeredagentsincapi.vercel.app/api/companies" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Company LLC",
-    "state": "Wyoming",
-    "entityType": "Limited Liability Company"
+    "entity_type": "Limited Liability Company",
+    "home_state": "Wyoming"
+  }'
+
+# Option 2: Multiple jurisdictions
+curl -X POST "https://registeredagentsincapi.vercel.app/api/companies" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Multi-State Company LLC",
+    "entity_type": "Limited Liability Company",
+    "jurisdictions": ["Delaware", "California", "New York"],
+    "duplicate_name_allowed": false
   }'
 ```
 
@@ -59,10 +76,29 @@ curl -X GET "https://registeredagentsincapi.vercel.app/api/companies/1"
 
 ### 8. Update Company (CorpTools API)
 ```bash
+# Update company name and entity type
 curl -X PATCH "https://registeredagentsincapi.vercel.app/api/companies/1" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Updated Company Name"
+    "name": "Updated Company Name",
+    "entity_type": "Corporation"
+  }'
+
+# Add new jurisdictions
+curl -X PATCH "https://registeredagentsincapi.vercel.app/api/companies/1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Company Name",
+    "entity_type": "Corporation",
+    "jurisdictions": ["Texas", "Wyoming", "Ohio"]
+  }'
+
+# Change home state
+curl -X PATCH "https://registeredagentsincapi.vercel.app/api/companies/1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Company Name",
+    "home_state": "Delaware"
   }'
 ```
 
@@ -79,6 +115,46 @@ curl -X GET "https://registeredagentsincapi.vercel.app/api?action=invoices"
 ### 11. Get Payment Methods (CorpTools API)
 ```bash
 curl -X GET "https://registeredagentsincapi.vercel.app/api?action=payment-methods"
+```
+
+### 12. Add Payment Method (Local)
+```bash
+curl -X POST "https://registeredagentsincapi.vercel.app/api/payment" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "cardNumber": "4111-1111-1111-1111",
+    "securityCode": "123",
+    "expMonth": "12",
+    "expYear": "2029",
+    "useDifferentBilling": false
+  }'
+```
+
+### 13. Add Payment Method with Billing Address
+```bash
+curl -X POST "https://registeredagentsincapi.vercel.app/api/payment" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "cardNumber": "4111-1111-1111-1111",
+    "securityCode": "123",
+    "expMonth": "12",
+    "expYear": "2029",
+    "useDifferentBilling": true,
+    "billingCountry": "United States",
+    "billingAddress": "123 Billing St",
+    "billingCity": "New York",
+    "billingState": "NY",
+    "billingZip": "10001"
+  }'
+```
+
+### 14. Get User Payment Methods (Local)
+```bash
+curl -X GET "https://registeredagentsincapi.vercel.app/api/payment"
 ```
 
 ## Run All Tests

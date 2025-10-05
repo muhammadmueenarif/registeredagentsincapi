@@ -48,7 +48,48 @@ async function handler(req, res) {
                 } 
                 else if (method === 'PATCH') {
                     // Update company via CorpTools API
-                    const result = await request.patch(`/companies/${companyId}`, body);
+                    const { 
+                        name, 
+                        entity_type, 
+                        jurisdictions = [], 
+                        home_state,
+                        duplicate_name_allowed = false 
+                    } = body;
+
+                    // Build update data according to CorpTools API
+                    let updateData;
+                    if (jurisdictions.length > 0 && home_state) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'Provide either jurisdictions array or home_state parameter, but not both'
+                        });
+                    }
+
+                    if (jurisdictions.length > 0) {
+                        // Use jurisdictions array
+                        updateData = {
+                            companies: [{
+                                company: companyId,
+                                name: name,
+                                entity_type: entity_type,
+                                jurisdictions: jurisdictions
+                            }],
+                            duplicate_name_allowed: duplicate_name_allowed
+                        };
+                    } else {
+                        // Use home_state or other fields
+                        updateData = {
+                            companies: [{
+                                company: companyId,
+                                name: name,
+                                entity_type: entity_type,
+                                home_state: home_state
+                            }],
+                            duplicate_name_allowed: duplicate_name_allowed
+                        };
+                    }
+
+                    const result = await request.patch('/companies', updateData);
                     res.status(200).json(result);
                 }
                 else {
