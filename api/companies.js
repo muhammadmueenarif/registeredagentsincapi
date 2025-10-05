@@ -78,15 +78,20 @@ async function handler(req, res) {
                         name = company.name;
                         entity_type = company.entity_type || 'Limited Liability Company';
                         jurisdictions = company.jurisdictions || [];
-                        home_state = company.home_state || 'Wyoming';
+                        home_state = company.home_state; // Don't set default if not provided
                         duplicate_name_allowed = body.duplicate_name_allowed || false;
                     } else {
                         // Handle direct field format (from curl/API tests)
                         name = body.name;
                         entity_type = body.entity_type || 'Limited Liability Company';
                         jurisdictions = body.jurisdictions || [];
-                        home_state = body.home_state || 'Wyoming';
+                        home_state = body.home_state; // Don't set default if not provided
                         duplicate_name_allowed = body.duplicate_name_allowed || false;
+                    }
+                    
+                    // Set default home_state only if no jurisdictions and no home_state provided
+                    if (jurisdictions.length === 0 && !home_state) {
+                        home_state = 'Wyoming';
                     }
                     
                     console.log('Extracted company data:', { name, entity_type, jurisdictions, home_state, duplicate_name_allowed });
@@ -99,7 +104,7 @@ async function handler(req, res) {
                     }
 
                     // Validate jurisdictions vs home_state logic
-                    if (jurisdictions.length > 0 && home_state) {
+                    if (jurisdictions.length > 0 && home_state && home_state !== 'Wyoming') {
                         return res.status(400).json({
                             success: false,
                             error: 'Provide either jurisdictions array or home_state parameter, but not both'
@@ -109,7 +114,7 @@ async function handler(req, res) {
                     // Build company data according to CorpTools API
                     let companyData;
                     if (jurisdictions.length > 0) {
-                        // Use jurisdictions array
+                        // Use jurisdictions array - do NOT include home_state
                         companyData = {
                             companies: [{
                                 name: name,
@@ -118,8 +123,9 @@ async function handler(req, res) {
                             }],
                             duplicate_name_allowed: duplicate_name_allowed
                         };
+                        console.log('Using jurisdictions array:', jurisdictions);
                     } else {
-                        // Use home_state
+                        // Use home_state - do NOT include jurisdictions
                         companyData = {
                             companies: [{
                                 name: name,
@@ -128,6 +134,7 @@ async function handler(req, res) {
                             }],
                             duplicate_name_allowed: duplicate_name_allowed
                         };
+                        console.log('Using home_state:', home_state);
                     }
 
                     console.log('Creating company via CorpTools API for user:', req.user.email, companyData);
