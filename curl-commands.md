@@ -139,3 +139,5 @@ chmod +x test-api-curl.sh
 - **Authentication**: Local users are managed separately from CorpTools API
 - **Company Operations**: All company operations go through CorpTools API
 - **Error Responses**: Check HTTP status codes and error messages in responses
+
+

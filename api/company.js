@@ -1,5 +1,7 @@
 // CorpTools Individual Company API Endpoint
 const { request } = require('./base_request');
+const { authenticateUser } = require('./auth_middleware');
+const { getUserCompanies } = require('./users');
 
 async function handler(req, res) {
     // CORS headers - Allow all requests
@@ -25,22 +27,45 @@ async function handler(req, res) {
             });
         }
 
-        if (method === 'GET') {
-            // Get specific company by ID from CorpTools API
-            const result = await request.get(`/companies/${companyId}`);
-            res.status(200).json(result);
-        } 
-        else if (method === 'PATCH') {
-            // Update company via CorpTools API
-            const result = await request.patch(`/companies/${companyId}`, body);
-            res.status(200).json(result);
-        }
-        else {
-            res.status(405).json({
-                success: false,
-                error: 'Method not allowed'
-            });
-        }
+        // Require authentication for all company operations
+        authenticateUser(req, res, async () => {
+            try {
+                // Check if user owns this company
+                const userCompanies = getUserCompanies(req.user.id);
+                const userOwnsCompany = userCompanies.some(company => company.id === companyId);
+                
+                if (!userOwnsCompany) {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Access denied. You can only access companies you created.'
+                    });
+                }
+
+                if (method === 'GET') {
+                    // Get specific company by ID from CorpTools API
+                    const result = await request.get(`/companies/${companyId}`);
+                    res.status(200).json(result);
+                } 
+                else if (method === 'PATCH') {
+                    // Update company via CorpTools API
+                    const result = await request.patch(`/companies/${companyId}`, body);
+                    res.status(200).json(result);
+                }
+                else {
+                    res.status(405).json({
+                        success: false,
+                        error: 'Method not allowed'
+                    });
+                }
+            } catch (error) {
+                console.error('Company API Error:', error);
+                res.status(500).json({
+                    success: false,
+                    error: 'Internal server error',
+                    message: error.message
+                });
+            }
+        });
 
     } catch (error) {
         console.error('Company API Error:', error);
@@ -53,3 +78,5 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
+
+

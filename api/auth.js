@@ -45,12 +45,13 @@ async function handler(req, res) {
                     data: {
                         message: 'Login successful',
                         user: {
+                            id: user.id,
                             firstName: user.firstName,
                             lastName: user.lastName,
                             email: user.email,
                             loginTime: new Date().toISOString()
                         },
-                        token: 'mock-jwt-token-' + Date.now()
+                        token: 'user-' + user.id // Token format for authentication
                     }
                 });
             } else {

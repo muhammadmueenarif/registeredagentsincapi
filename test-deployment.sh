@@ -120,3 +120,5 @@ echo "1. Verify the API is deployed to Vercel"
 echo "2. Check Vercel deployment logs"
 echo "3. Ensure all environment variables are set"
 echo "4. Test locally first: npm run dev"
+
+

@@ -49,23 +49,24 @@ async function handler(req, res) {
             };
 
             // Add to users array
-            addUser(newUser);
+            const createdUser = addUser(newUser);
 
             res.status(200).json({
                 success: true,
                 data: {
                     message: 'User account created successfully',
                     user: {
-                        firstName: newUser.firstName,
-                        lastName: newUser.lastName,
-                        email: newUser.email,
-                        createdAt: newUser.createdAt,
-                        status: newUser.status
+                        id: createdUser.id,
+                        firstName: createdUser.firstName,
+                        lastName: createdUser.lastName,
+                        email: createdUser.email,
+                        createdAt: createdUser.createdAt,
+                        status: createdUser.status
                     },
                     nextSteps: [
                         'You can now login with your credentials',
                         'Use the login form to access your account',
-                        'Contact support if you need CorpTools API access'
+                        'You can create and manage companies after login'
                     ]
                 }
             });
