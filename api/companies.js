@@ -69,15 +69,29 @@ async function handler(req, res) {
             // Require authentication for creating companies
             authenticateUser(req, res, async () => {
                 try {
-                    const { 
-                        name, 
-                        entity_type = 'Limited Liability Company',
-                        jurisdictions = [],
-                        home_state = 'Wyoming',
-                        duplicate_name_allowed = false
-                    } = body;
+                    // Handle both direct field format and companies array format
+                    let name, entity_type, jurisdictions, home_state, duplicate_name_allowed;
                     
-                    if (!name) {
+                    if (body.companies && body.companies.length > 0) {
+                        // Handle companies array format (from frontend)
+                        const company = body.companies[0];
+                        name = company.name;
+                        entity_type = company.entity_type || 'Limited Liability Company';
+                        jurisdictions = company.jurisdictions || [];
+                        home_state = company.home_state || 'Wyoming';
+                        duplicate_name_allowed = body.duplicate_name_allowed || false;
+                    } else {
+                        // Handle direct field format (from curl/API tests)
+                        name = body.name;
+                        entity_type = body.entity_type || 'Limited Liability Company';
+                        jurisdictions = body.jurisdictions || [];
+                        home_state = body.home_state || 'Wyoming';
+                        duplicate_name_allowed = body.duplicate_name_allowed || false;
+                    }
+                    
+                    console.log('Extracted company data:', { name, entity_type, jurisdictions, home_state, duplicate_name_allowed });
+                    
+                    if (!name || name.trim() === '') {
                         return res.status(400).json({
                             success: false,
                             error: 'Company name is required'
