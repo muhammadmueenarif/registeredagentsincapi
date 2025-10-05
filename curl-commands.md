@@ -157,6 +157,85 @@ curl -X POST "https://registeredagentsincapi.vercel.app/api/payment" \
 curl -X GET "https://registeredagentsincapi.vercel.app/api/payment"
 ```
 
+### 15. Add Attorney Information (Local)
+```bash
+curl -X POST "https://registeredagentsincapi.vercel.app/api/attorney" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notifyAttorney": true,
+    "attorneyEmail": "attorney@lawfirm.com",
+    "attorneyFirstName": "John",
+    "attorneyLastName": "Smith",
+    "attorneyPhone": "555-123-4567",
+    "attorneyFirm": "Smith & Associates"
+  }'
+```
+
+### 16. Get Attorney Information (Local)
+```bash
+curl -X GET "https://registeredagentsincapi.vercel.app/api/attorney"
+```
+
+### 17. Add Business Identity Services (Local)
+```bash
+curl -X POST "https://registeredagentsincapi.vercel.app/api/business-identity" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domainName": "mycompany",
+    "domainExtension": "com",
+    "websiteHosting": true,
+    "businessEmail": "info@mycompany.com",
+    "phoneNumber": "555-123-4567",
+    "phoneAreaCode": "555",
+    "businessSupplies": true,
+    "suppliesType": "Office supplies and equipment"
+  }'
+```
+
+### 18. Get Business Identity Services (Local)
+```bash
+curl -X GET "https://registeredagentsincapi.vercel.app/api/business-identity"
+```
+
+### 19. Add Item to Shopping Cart (Local)
+```bash
+curl -X POST "https://registeredagentsincapi.vercel.app/api/cart" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceId": "registered-agent-wyoming",
+    "serviceName": "Registered Agent Service - Wyoming",
+    "serviceType": "registered-agent",
+    "price": 149.00,
+    "quantity": 1,
+    "description": "Annual registered agent service for Wyoming",
+    "category": "business-services"
+  }'
+```
+
+### 20. Get Shopping Cart (Local)
+```bash
+curl -X GET "https://registeredagentsincapi.vercel.app/api/cart"
+```
+
+### 21. Update Cart Item (Local)
+```bash
+curl -X PATCH "https://registeredagentsincapi.vercel.app/api/cart" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "itemId": "cart-item-1234567890-abc123",
+    "quantity": 2
+  }'
+```
+
+### 22. Remove Item from Cart (Local)
+```bash
+curl -X DELETE "https://registeredagentsincapi.vercel.app/api/cart" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "itemId": "cart-item-1234567890-abc123"
+  }'
+```
+
 ## Run All Tests
 ```bash
 # Make script executable and run
