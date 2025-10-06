@@ -22,55 +22,76 @@ async function handler(req, res) {
             // Require authentication for adding payment details
             authenticateUser(req, res, async () => {
                 try {
-                    const {
-                        firstName,
-                        lastName,
-                        cardNumber,
-                        securityCode,
-                        expMonth,
-                        expYear,
-                        useDifferentBilling = false,
-                        billingCountry = '',
-                        billingAddress = '',
-                        billingCity = '',
-                        billingState = '',
-                        billingZip = ''
-                    } = body;
+        const {
+            firstName,
+            lastName,
+            email,
+            phone,
+            amount,
+            status = 'pending_payment',
+            cardNumber,
+            securityCode,
+            expMonth,
+            expYear,
+            token, // Payment token from gateway
+            useDifferentBilling = false,
+            billingCountry = '',
+            billingAddress = '',
+            billingCity = '',
+            billingState = '',
+            billingZip = '',
+            companyName,
+            entityType
+        } = body;
 
-                    // Validate required fields
-                    if (!firstName || !lastName || !cardNumber || !securityCode || !expMonth || !expYear) {
+                    // Validate required fields - if using token, card details are optional
+                    if (!firstName || !lastName) {
                         return res.status(400).json({
                             success: false,
-                            error: 'First name, last name, card number, security code, expiration month, and expiration year are required'
+                            error: 'First name and last name are required'
                         });
                     }
 
-                    // Validate card number format (basic validation)
-                    const cleanCardNumber = cardNumber.replace(/\D/g, '');
-                    if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+                    // If no token provided, require card details
+                    if (!token && (!cardNumber || !securityCode || !expMonth || !expYear)) {
                         return res.status(400).json({
                             success: false,
-                            error: 'Please enter a valid Credit Card Number'
+                            error: 'Card number, security code, expiration month, and expiration year are required when no payment token is provided'
                         });
                     }
 
-                    // Validate security code
-                    if (securityCode.length < 3 || securityCode.length > 4) {
-                        return res.status(400).json({
-                            success: false,
-                            error: 'Security code must be 3-4 digits'
-                        });
-                    }
+                    // Only validate card details if no token provided
+                    let cleanCardNumber = '';
+                    if (!token && cardNumber) {
+                        // Validate card number format (basic validation)
+                        cleanCardNumber = cardNumber.replace(/\D/g, '');
+                        if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+                            return res.status(400).json({
+                                success: false,
+                                error: 'Please enter a valid Credit Card Number'
+                            });
+                        }
 
-                    // Validate expiration date
-                    const currentYear = new Date().getFullYear();
-                    const currentMonth = new Date().getMonth() + 1;
-                    
-                    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
-                        return res.status(400).json({
-                            success: false,
-                            error: 'Card has expired'
-                        });
+                        // Validate security code
+                        if (securityCode && (securityCode.length < 3 || securityCode.length > 4)) {
+                            return res.status(400).json({
+                                success: false,
+                                error: 'Security code must be 3-4 digits'
+                            });
+                        }
+
+                        // Validate expiration date
+                        if (expYear && expMonth) {
+                            const currentYear = new Date().getFullYear();
+                            const currentMonth = new Date().getMonth() + 1;
+                            
+                            if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+                                return res.status(400).json({
+                                    success: false,
+                                    error: 'Card has expired'
+                                });
+                            }
+                        }
                     }
 
                     // Create payment details object
@@ -78,11 +99,19 @@ async function handler(req, res) {
                         id: 'payment-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                         firstName,
                         lastName,
-                        cardNumber: cardNumber.replace(/\d(?=\d{4})/g, "*"), // Mask card number for storage
-                        lastFour: cleanCardNumber.slice(-4),
-                        securityCode: '***', // Don't store actual CVV
-                        expMonth,
-                        expYear,
+                        email: email || '',
+                        phone: phone || '',
+                        amount: amount || 0,
+                        status: status,
+                        companyName: companyName || '',
+                        entityType: entityType || '',
+                        // Store token if provided, otherwise mask card number
+                        token: token || undefined,
+                        cardNumber: cardNumber ? cardNumber.replace(/\d(?=\d{4})/g, "*") : undefined, // Mask card number for storage
+                        lastFour: cleanCardNumber ? cleanCardNumber.slice(-4) : undefined,
+                        securityCode: securityCode ? '***' : undefined, // Don't store actual CVV
+                        expMonth: expMonth || undefined,
+                        expYear: expYear || undefined,
                         useDifferentBilling,
                         billingCountry,
                         billingAddress,
@@ -101,23 +130,29 @@ async function handler(req, res) {
                             success: true,
                             data: {
                                 message: 'Payment details saved successfully',
-                                payment: {
-                                    id: paymentDetails.id,
-                                    firstName: paymentDetails.firstName,
-                                    lastName: paymentDetails.lastName,
-                                    cardNumber: paymentDetails.cardNumber,
-                                    lastFour: paymentDetails.lastFour,
-                                    expMonth: paymentDetails.expMonth,
-                                    expYear: paymentDetails.expYear,
-                                    useDifferentBilling: paymentDetails.useDifferentBilling,
-                                    billingCountry: paymentDetails.billingCountry,
-                                    billingAddress: paymentDetails.billingAddress,
-                                    billingCity: paymentDetails.billingCity,
-                                    billingState: paymentDetails.billingState,
-                                    billingZip: paymentDetails.billingZip,
-                                    createdAt: paymentDetails.createdAt,
-                                    isDefault: paymentDetails.isDefault
-                                },
+                               payment: {
+                                   id: paymentDetails.id,
+                                   firstName: paymentDetails.firstName,
+                                   lastName: paymentDetails.lastName,
+                                   email: paymentDetails.email,
+                                   phone: paymentDetails.phone,
+                                   amount: paymentDetails.amount,
+                                   status: paymentDetails.status,
+                                   companyName: paymentDetails.companyName,
+                                   entityType: paymentDetails.entityType,
+                                   cardNumber: paymentDetails.cardNumber,
+                                   lastFour: paymentDetails.lastFour,
+                                   expMonth: paymentDetails.expMonth,
+                                   expYear: paymentDetails.expYear,
+                                   useDifferentBilling: paymentDetails.useDifferentBilling,
+                                   billingCountry: paymentDetails.billingCountry,
+                                   billingAddress: paymentDetails.billingAddress,
+                                   billingCity: paymentDetails.billingCity,
+                                   billingState: paymentDetails.billingState,
+                                   billingZip: paymentDetails.billingZip,
+                                   createdAt: paymentDetails.createdAt,
+                                   isDefault: paymentDetails.isDefault
+                               },
                                 user: {
                                     id: req.user.id,
                                     email: req.user.email

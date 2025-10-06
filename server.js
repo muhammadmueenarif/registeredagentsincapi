@@ -19,6 +19,7 @@ const paymentHandler = require('./api/payment');
 const attorneyHandler = require('./api/attorney');
 const businessIdentityHandler = require('./api/business-identity');
 const cartHandler = require('./api/cart');
+const createPaymentIntentHandler = require('./api/create-payment-intent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +47,24 @@ app.get('/api/cart', cartHandler);
 app.post('/api/cart', cartHandler);
 app.patch('/api/cart', cartHandler);
 app.delete('/api/cart', cartHandler);
+app.post('/api/create-payment-intent', (req, res) => {
+    console.log('🔔 Direct create-payment-intent called with:', req.body);
+    createPaymentIntentHandler(req, res);
+});
+app.post('/api/test-payment', (req, res) => {
+    console.log('🔔 Test payment endpoint called with:', req.body);
+    res.json({ 
+        success: true, 
+        message: 'Test payment endpoint working',
+        data: req.body 
+    });
+});
+
+// Use real Stripe payment intent handler
+app.get('/api/create-payment-intent', (req, res) => {
+    res.json({ message: 'Payment intent endpoint is working', method: 'GET' });
+});
+console.log('✅ Payment intent endpoint registered: POST /api/create-payment-intent');
 app.get('/api', indexHandler);
 app.post('/api', indexHandler);
 
