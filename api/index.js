@@ -76,7 +76,7 @@ async function handler(req, res) {
 
                 // Check local user credentials
                 const { findUserByCredentials } = require('./users');
-                const user = findUserByCredentials(email, password);
+                const user = await findUserByCredentials(email, password);
                 
                 if (user) {
                     result = {
@@ -127,7 +127,7 @@ async function handler(req, res) {
                     }
 
                     // Check if user already exists
-                    const existingUser = findUserByEmail(email);
+                    const existingUser = await findUserByEmail(email);
                     if (existingUser) {
                         return res.status(400).json({
                             success: false,
@@ -146,7 +146,7 @@ async function handler(req, res) {
                     };
 
                     // Add to users array
-                    addUser(newUser);
+                    await addUser(newUser);
 
                     result = {
                         success: true,

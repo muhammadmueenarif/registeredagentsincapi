@@ -37,7 +37,7 @@ async function handler(req, res) {
             }
 
             // Check user credentials against our user storage
-            const user = findUserByCredentials(email, password);
+            const user = await findUserByCredentials(email, password);
             
             if (user) {
                 res.status(200).json({

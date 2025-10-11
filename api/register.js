@@ -41,7 +41,7 @@ async function handler(req, res) {
             }
 
             // Check if user already exists
-            const existingUser = findUserByEmail(email);
+            const existingUser = await findUserByEmail(email);
             if (existingUser) {
                 return res.status(400).json({
                     success: false,
@@ -66,7 +66,7 @@ async function handler(req, res) {
             };
 
             // Add to users array
-            const createdUser = addUser(newUser);
+            const createdUser = await addUser(newUser);
 
             res.status(200).json({
                 success: true,
