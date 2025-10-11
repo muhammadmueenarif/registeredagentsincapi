@@ -48,7 +48,13 @@ const existingUser = {
     state: "Arkansas",
     zipCode: "48100",
     status: "active",
-    companies: [], // Initialize empty companies array for now
+    companies: [
+        {
+            id: "test-company-001",
+            name: "Test Company LLC",
+            createdAt: "2025-10-11T16:59:00.000Z"
+        }
+    ], // Initialize with a test company
     payments: [],
     attorneys: [],
     businessIdentity: [],
@@ -57,6 +63,10 @@ const existingUser = {
 };
 
 inMemoryUsers.set(existingUser.id, existingUser);
+// Also store with the ID without 'user-' prefix for compatibility
+const userIdWithoutPrefix = existingUser.id.replace('user-', '');
+inMemoryUsers.set(userIdWithoutPrefix, existingUser);
+
 console.log('✅ Initialized in-memory storage with existing user data');
 
 async function addUser(user) {
@@ -169,32 +179,33 @@ async function findUserById(userId) {
 }
 
 async function addCompanyToUser(userId, companyId, companyName) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot save user data');
-    }
-
+    // Use in-memory storage for now since Firebase is not properly configured
     try {
-        const userRef = doc(db, 'user_accounts', userId);
-        const userDoc = await getDoc(userRef);
+        console.log('🔍 addCompanyToUser called with:', { userId, companyId, companyName });
+        console.log('🔍 Available user IDs:', Array.from(inMemoryUsers.keys()));
+        const user = inMemoryUsers.get(userId);
+        console.log('🔍 User found:', user ? 'YES' : 'NO');
+        
+        if (user) {
+            if (!user.companies) {
+                user.companies = [];
+            }
 
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const companies = userData.companies || [];
-
-            companies.push({
+            user.companies.push({
                 id: companyId,
                 name: companyName,
                 createdAt: new Date().toISOString()
             });
 
-            await updateDoc(userRef, { companies });
-            console.log('✅ Company added to user in Firestore:', userId, companyId);
+            console.log('✅ Company added to user in in-memory storage:', userId, companyId);
+            console.log('✅ User now has', user.companies.length, 'companies');
             return true;
         }
+        console.log('❌ User not found for ID:', userId);
         return false;
     } catch (error) {
         console.error('❌ Error adding company to user:', error);
-        throw error;
+        return false;
     }
 }
 

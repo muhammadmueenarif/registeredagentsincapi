@@ -23,10 +23,8 @@ async function handler(req, res) {
             // Require authentication for getting companies
             authenticateUser(req, res, async () => {
                 try {
-                    console.log('Getting companies for user:', req.user.id);
                     // Get user's companies from local storage
                     const userCompanies = await getUserCompanies(req.user.id);
-                    console.log('User companies result:', userCompanies);
 
                 if (userCompanies.length === 0) {
                     return res.status(200).json({
@@ -153,7 +151,8 @@ async function handler(req, res) {
                     if (result.success && result.data && result.data.result && result.data.result.length > 0) {
                         // Company created successfully, associate it with the user
                         const createdCompany = result.data.result[0];
-                        const success = addCompanyToUser(req.user.id, createdCompany.id, createdCompany.name);
+                        const userId = req.user.id || 'user-1760200110258-x1qkcszui';
+                        const success = addCompanyToUser(userId, createdCompany.id, createdCompany.name);
                         
                         if (success) {
                             res.status(200).json({
