@@ -51,7 +51,7 @@ async function handler(req, res) {
                             email: user.email,
                             loginTime: new Date().toISOString()
                         },
-                        token: 'user-' + user.id // Token format for authentication
+                        token: 'user-' + user.id.replace('user-', '') // Token format for authentication
                     }
                 });
             } else {

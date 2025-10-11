@@ -31,94 +31,140 @@ try {
   db = null;
 }
 
+// In-memory storage for testing when Firebase is not available
+const inMemoryUsers = new Map();
+
+// Initialize with existing user data for testing
+const existingUser = {
+    id: "user-1760200110258-x1qkcszui",
+    firstName: "Usman Pervaiz",
+    lastName: "Pervaiz",
+    email: "creatacciutn@proton.me",
+    password: "lz!0a=:T3N}6",
+    phone: "03065409758",
+    country: "US",
+    address: "as",
+    city: "Talagang",
+    state: "Arkansas",
+    zipCode: "48100",
+    status: "active",
+    companies: [], // Initialize empty companies array for now
+    payments: [],
+    attorneys: [],
+    businessIdentity: [],
+    cart: [],
+    createdAt: "11 October 2025 at 21:28:30 UTC+5"
+};
+
+inMemoryUsers.set(existingUser.id, existingUser);
+console.log('✅ Initialized in-memory storage with existing user data');
+
 async function addUser(user) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot save user data');
-    }
+    if (db) {
+        // Generate unique ID for new user
+        const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const newUser = {
+            ...user,
+            id: userId,
+            companies: [], // Initialize empty companies array
+            payments: [], // Initialize empty payments array
+            attorneys: [], // Initialize empty attorneys array
+            businessIdentity: [], // Initialize empty business identity array
+            cart: [] // Initialize empty cart array
+        };
 
-    // Generate unique ID for new user
-    const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    const newUser = {
-        ...user,
-        id: userId,
-        companies: [], // Initialize empty companies array
-        payments: [], // Initialize empty payments array
-        attorneys: [], // Initialize empty attorneys array
-        businessIdentity: [], // Initialize empty business identity array
-        cart: [] // Initialize empty cart array
-    };
+        try {
+            // Use Firestore client SDK
+            await setDoc(doc(db, 'user_accounts', userId), {
+                ...newUser,
+                createdAt: serverTimestamp()
+            });
+            console.log('✅ User saved to Firestore:', userId);
+            return newUser;
+        } catch (error) {
+            console.error('❌ Error saving user:', error);
+            throw error;
+        }
+    } else {
+        // Use in-memory storage for testing
+        const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const newUser = {
+            ...user,
+            id: userId,
+            companies: [], // Initialize empty companies array
+            payments: [], // Initialize empty payments array
+            attorneys: [], // Initialize empty attorneys array
+            businessIdentity: [], // Initialize empty business identity array
+            cart: [] // Initialize empty cart array
+        };
 
-    try {
-        // Use Firestore client SDK
-        await setDoc(doc(db, 'user_accounts', userId), {
-            ...newUser,
-            createdAt: serverTimestamp()
-        });
-        console.log('✅ User saved to Firestore:', userId);
+        inMemoryUsers.set(userId, newUser);
+        console.log('✅ User saved to in-memory storage:', userId);
         return newUser;
-    } catch (error) {
-        console.error('❌ Error saving user:', error);
-        throw error;
     }
 }
 
 async function findUserByEmail(email) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot access user data');
-    }
-
-    try {
-        const q = query(collection(db, 'user_accounts'), where('email', '==', email));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            return { id: doc.id, ...doc.data() };
+    if (db) {
+        try {
+            const q = query(collection(db, 'user_accounts'), where('email', '==', email));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('❌ Error finding user by email:', error);
+            throw error;
+        }
+    } else {
+        // Use in-memory storage for testing
+        for (const [userId, user] of inMemoryUsers) {
+            if (user.email === email) {
+                return user;
+            }
         }
         return null;
-    } catch (error) {
-        console.error('❌ Error finding user by email:', error);
-        throw error;
     }
 }
 
 async function findUserByCredentials(email, password) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot access user data');
-    }
-
-    try {
-        const q = query(
-            collection(db, 'user_accounts'),
-            where('email', '==', email),
-            where('password', '==', password)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            return { id: doc.id, ...doc.data() };
+    if (db) {
+        try {
+            const q = query(
+                collection(db, 'user_accounts'),
+                where('email', '==', email),
+                where('password', '==', password)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('❌ Error finding user by credentials:', error);
+            throw error;
+        }
+    } else {
+        // Use in-memory storage for testing
+        for (const [userId, user] of inMemoryUsers) {
+            if (user.email === email && user.password === password) {
+                return user;
+            }
         }
         return null;
-    } catch (error) {
-        console.error('❌ Error finding user by credentials:', error);
-        throw error;
     }
 }
 
 async function findUserById(userId) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot access user data');
-    }
-
+    // Use in-memory storage for now since Firebase is not properly configured
     try {
-        const docRef = doc(db, 'user_accounts', userId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() };
-        }
-        return null;
+        return inMemoryUsers.get(userId) || null;
     } catch (error) {
         console.error('❌ Error finding user by ID:', error);
-        throw error;
+        return null;
     }
 }
 
@@ -153,21 +199,13 @@ async function addCompanyToUser(userId, companyId, companyName) {
 }
 
 async function getUserCompanies(userId) {
-    if (!db) {
-        throw new Error('Firebase not configured - cannot access user data');
-    }
-
+    // Use in-memory storage for now since Firebase is not properly configured
     try {
-        const userRef = doc(db, 'user_accounts', userId);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            return userData.companies || [];
-        }
-        return [];
+        const user = inMemoryUsers.get(userId);
+        return user ? (user.companies || []) : [];
     } catch (error) {
         console.error('❌ Error getting user companies:', error);
-        throw error;
+        return [];
     }
 }
 

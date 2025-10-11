@@ -23,21 +23,28 @@ async function handler(req, res) {
             // Require authentication for getting companies
             authenticateUser(req, res, async () => {
                 try {
+                    console.log('Getting companies for user:', req.user.id);
                     // Get user's companies from local storage
-                    const userCompanies = getUserCompanies(req.user.id);
-                    
-                    if (userCompanies.length === 0) {
-                        return res.status(200).json({
-                            success: true,
-                            data: {
-                                message: 'No companies found for this user',
-                                companies: []
-                            }
-                        });
-                    }
-                    
-                    // Get full company details from CorpTools API for user's companies
-                    const companyDetails = [];
+                    const userCompanies = await getUserCompanies(req.user.id);
+                    console.log('User companies result:', userCompanies);
+
+                if (userCompanies.length === 0) {
+                    return res.status(200).json({
+                        success: true,
+                        data: {
+                            message: 'No companies found for this user',
+                            companies: []
+                        }
+                    });
+                }
+
+                // Get full company details from CorpTools API for user's companies
+                const companyDetails = [];
+                console.log('userCompanies type:', typeof userCompanies);
+                console.log('userCompanies value:', userCompanies);
+                console.log('userCompanies isArray:', Array.isArray(userCompanies));
+
+                if (Array.isArray(userCompanies)) {
                     for (const userCompany of userCompanies) {
                         try {
                             const result = await request.get(`/companies/${userCompany.id}`);
@@ -48,14 +55,17 @@ async function handler(req, res) {
                             console.log(`Company ${userCompany.id} not found in CorpTools API`);
                         }
                     }
-                    
-                    res.status(200).json({
-                        success: true,
-                        data: {
-                            message: `Found ${companyDetails.length} companies for user ${req.user.email}`,
-                            companies: companyDetails
-                        }
-                    });
+                } else {
+                    console.log('userCompanies is not an array, skipping company details fetch');
+                }
+
+                res.status(200).json({
+                    success: true,
+                    data: {
+                        message: `Found ${companyDetails.length} companies for user ${req.user.email}`,
+                        companies: companyDetails
+                    }
+                });
                 } catch (error) {
                     console.error('Error getting user companies:', error);
                     res.status(500).json({
