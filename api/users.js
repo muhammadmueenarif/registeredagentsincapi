@@ -1,29 +1,41 @@
 // Firebase Firestore integration for user storage
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, serverTimestamp } = require('firebase/firestore');
 
-// Initialize Firebase Admin SDK (for server-side)
+// Initialize Firebase (client-side config for server)
 let db;
 try {
-  // Check if we have Firebase environment variables
+  // Check if we have Firebase config
   if (process.env.FIREBASE_PROJECT_ID) {
-    admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID
-    });
-    db = admin.firestore();
-    console.log('✅ Firebase Firestore initialized with environment variables');
+    const firebaseConfig = {
+      apiKey: process.env.FIREBASE_API_KEY || "AIzaSyDyL_aadGzyozNjU6QKoRgHjJ_jxlwWJxU",
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN || "maple-educators-app.firebaseapp.com",
+      projectId: process.env.FIREBASE_PROJECT_ID || "maple-educators-app",
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "maple-educators-app.firebasestorage.app",
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "782200920015",
+      appId: process.env.FIREBASE_APP_ID || "1:782200920015:web:7c87d1cb8868e7e02024ba",
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-E4TB3CLH62"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    console.log('✅ Firebase Firestore initialized with client config');
   } else {
-    console.log('⚠️ Firebase environment variables not found, falling back to in-memory storage');
+    console.log('⚠️ Firebase config not found');
+    console.log('🔄 Running without Firebase - user data will not persist');
+    db = null;
   }
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error.message);
-  // Fallback to in-memory storage for development
-  console.log('🔄 Falling back to in-memory storage');
+  console.log('🔄 Running without Firebase - user data will not persist');
+  db = null;
 }
 
-// In-memory fallback for development/testing
-let users = [];
-
 async function addUser(user) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot save user data');
+    }
+
     // Generate unique ID for new user
     const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     const newUser = {
@@ -37,493 +49,382 @@ async function addUser(user) {
     };
 
     try {
-        if (db) {
-            // Use Firestore
-            await db.collection('user_accounts').doc(userId).set({
-                ...newUser,
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-            console.log('✅ User saved to Firestore:', userId);
-        } else {
-            // Fallback to in-memory
-            users.push(newUser);
-        }
+        // Use Firestore client SDK
+        await setDoc(doc(db, 'user_accounts', userId), {
+            ...newUser,
+            createdAt: serverTimestamp()
+        });
+        console.log('✅ User saved to Firestore:', userId);
         return newUser;
     } catch (error) {
         console.error('❌ Error saving user:', error);
-        // Fallback to in-memory
-        users.push(newUser);
-        return newUser;
+        throw error;
     }
 }
 
 async function findUserByEmail(email) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const snapshot = await db.collection('user_accounts').where('email', '==', email).get();
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                return { id: doc.id, ...doc.data() };
-            }
-        } else {
-            return users.find(u => u.email === email);
+        const q = query(collection(db, 'user_accounts'), where('email', '==', email));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
         }
+        return null;
     } catch (error) {
         console.error('❌ Error finding user by email:', error);
-        return users.find(u => u.email === email);
+        throw error;
     }
-    return null;
 }
 
 async function findUserByCredentials(email, password) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const snapshot = await db.collection('user_accounts').where('email', '==', email).where('password', '==', password).get();
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                return { id: doc.id, ...doc.data() };
-            }
-        } else {
-            return users.find(u => u.email === email && u.password === password);
+        const q = query(
+            collection(db, 'user_accounts'),
+            where('email', '==', email),
+            where('password', '==', password)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
         }
+        return null;
     } catch (error) {
         console.error('❌ Error finding user by credentials:', error);
-        return users.find(u => u.email === email && u.password === password);
+        throw error;
     }
-    return null;
 }
 
 async function findUserById(userId) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const doc = await db.collection('user_accounts').doc(userId).get();
-            if (doc.exists) {
-                return { id: doc.id, ...doc.data() };
-            }
-        } else {
-            return users.find(u => u.id === userId);
+        const docRef = doc(db, 'user_accounts', userId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() };
         }
+        return null;
     } catch (error) {
         console.error('❌ Error finding user by ID:', error);
-        return users.find(u => u.id === userId);
+        throw error;
     }
-    return null;
 }
 
 async function addCompanyToUser(userId, companyId, companyName) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot save user data');
+    }
+
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const companies = userData.companies || [];
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const companies = userData.companies || [];
 
-                companies.push({
-                    id: companyId,
-                    name: companyName,
-                    createdAt: new Date().toISOString()
-                });
+            companies.push({
+                id: companyId,
+                name: companyName,
+                createdAt: new Date().toISOString()
+            });
 
-                await userRef.update({ companies });
-                console.log('✅ Company added to user in Firestore:', userId, companyId);
-                return true;
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                user.companies.push({
-                    id: companyId,
-                    name: companyName,
-                    createdAt: new Date().toISOString()
-                });
-                return true;
-            }
+            await updateDoc(userRef, { companies });
+            console.log('✅ Company added to user in Firestore:', userId, companyId);
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error adding company to user:', error);
-        return false;
+        throw error;
     }
-    return false;
 }
 
 async function getUserCompanies(userId) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const userDoc = await db.collection('user_accounts').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                return userData.companies || [];
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            return user ? user.companies : [];
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData.companies || [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting user companies:', error);
-        const user = users.find(u => u.id === userId);
-        return user ? user.companies : [];
+        throw error;
     }
-    return [];
 }
 
 async function addPaymentToUser(userId, paymentDetails) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot save user data');
+    }
+
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const payments = userData.payments || [];
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const payments = userData.payments || [];
 
-                // If this is the first payment method, make it default
-                if (payments.length === 0) {
-                    paymentDetails.isDefault = true;
-                }
-
-                payments.push(paymentDetails);
-                await userRef.update({ payments });
-                console.log('✅ Payment added to user in Firestore:', userId);
-                return true;
+            // If this is the first payment method, make it default
+            if (payments.length === 0) {
+                paymentDetails.isDefault = true;
             }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                // If this is the first payment method, make it default
-                if (user.payments.length === 0) {
-                    paymentDetails.isDefault = true;
-                }
-                user.payments.push(paymentDetails);
-                return true;
-            }
+
+            payments.push(paymentDetails);
+            await updateDoc(userRef, { payments });
+            console.log('✅ Payment added to user in Firestore:', userId);
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error adding payment to user:', error);
-        return false;
+        throw error;
     }
-    return false;
 }
 
 async function getUserPayments(userId) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const userDoc = await db.collection('user_accounts').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                return userData.payments || [];
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            return user ? user.payments : [];
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData.payments || [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting user payments:', error);
-        const user = users.find(u => u.id === userId);
-        return user ? user.payments : [];
+        throw error;
     }
-    return [];
 }
 
 // Attorney management functions
 async function addAttorneyToUser(userId, attorneyInfo) {
-    try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+    if (!db) {
+        throw new Error('Firebase not configured - cannot save user data');
+    }
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const attorneys = userData.attorneys || [];
-                attorneys.push(attorneyInfo);
-                await userRef.update({ attorneys });
-                console.log('✅ Attorney added to user in Firestore:', userId);
-                return true;
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                user.attorneys.push(attorneyInfo);
-                return true;
-            }
+    try {
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const attorneys = userData.attorneys || [];
+            attorneys.push(attorneyInfo);
+            await updateDoc(userRef, { attorneys });
+            console.log('✅ Attorney added to user in Firestore:', userId);
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error adding attorney to user:', error);
-        return false;
+        throw error;
     }
-    return false;
 }
 
 async function getUserAttorneys(userId) {
+    if (!db) {
+        throw new Error('Firebase not configured - cannot access user data');
+    }
+
     try {
-        if (db) {
-            const userDoc = await db.collection('user_accounts').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                return userData.attorneys || [];
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            return user ? user.attorneys : [];
+        const userRef = doc(db, 'user_accounts', userId);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData.attorneys || [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting user attorneys:', error);
-        const user = users.find(u => u.id === userId);
-        return user ? user.attorneys : [];
+        throw error;
     }
-    return [];
 }
 
 // Business identity management functions
 async function addBusinessIdentityToUser(userId, businessIdentity) {
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = db.collection('user_accounts').doc(userId);
+        const userDoc = await userRef.get();
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const businessIdentities = userData.businessIdentity || [];
-                businessIdentities.push(businessIdentity);
-                await userRef.update({ businessIdentity: businessIdentities });
-                console.log('✅ Business identity added to user in Firestore:', userId);
-                return true;
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                user.businessIdentity.push(businessIdentity);
-                return true;
-            }
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            const businessIdentities = userData.businessIdentity || [];
+            businessIdentities.push(businessIdentity);
+            await userRef.update({ businessIdentity: businessIdentities });
+            console.log('✅ Business identity added to user in Firestore:', userId);
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error adding business identity to user:', error);
         return false;
     }
-    return false;
 }
 
 async function getUserBusinessIdentity(userId) {
     try {
-        if (db) {
-            const userDoc = await db.collection('user_accounts').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                return userData.businessIdentity || [];
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            return user ? user.businessIdentity : [];
+        const userDoc = await db.collection('user_accounts').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.businessIdentity || [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting user business identity:', error);
-        const user = users.find(u => u.id === userId);
-        return user ? user.businessIdentity : [];
+        return [];
     }
-    return [];
 }
 
 // Shopping cart management functions
 async function addToCart(userId, cartItem) {
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = db.collection('user_accounts').doc(userId);
+        const userDoc = await userRef.get();
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const cart = userData.cart || [];
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            const cart = userData.cart || [];
 
-                // Check if item already exists in cart
-                const existingItem = cart.find(item => item.serviceId === cartItem.serviceId);
-                if (existingItem) {
-                    // Update quantity if item exists
-                    existingItem.quantity += cartItem.quantity;
-                    existingItem.updatedAt = new Date().toISOString();
-                } else {
-                    // Add new item to cart
-                    cart.push(cartItem);
-                }
-
-                await userRef.update({ cart });
-                console.log('✅ Item added to cart in Firestore:', userId);
-                return true;
+            // Check if item already exists in cart
+            const existingItem = cart.find(item => item.serviceId === cartItem.serviceId);
+            if (existingItem) {
+                // Update quantity if item exists
+                existingItem.quantity += cartItem.quantity;
+                existingItem.updatedAt = new Date().toISOString();
+            } else {
+                // Add new item to cart
+                cart.push(cartItem);
             }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                // Check if item already exists in cart
-                const existingItem = user.cart.find(item => item.serviceId === cartItem.serviceId);
-                if (existingItem) {
-                    // Update quantity if item exists
-                    existingItem.quantity += cartItem.quantity;
-                    existingItem.updatedAt = new Date().toISOString();
-                } else {
-                    // Add new item to cart
-                    user.cart.push(cartItem);
-                }
-                return true;
-            }
+
+            await userRef.update({ cart });
+            console.log('✅ Item added to cart in Firestore:', userId);
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error adding to cart:', error);
         return false;
     }
-    return false;
 }
 
 async function getCart(userId) {
     try {
-        if (db) {
-            const userDoc = await db.collection('user_accounts').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                return userData.cart || [];
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            return user ? user.cart : [];
+        const userDoc = await db.collection('user_accounts').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.cart || [];
         }
+        return [];
     } catch (error) {
         console.error('❌ Error getting cart:', error);
-        const user = users.find(u => u.id === userId);
-        return user ? user.cart : [];
+        return [];
     }
-    return [];
 }
 
 async function updateCartItem(userId, itemId, quantity) {
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = db.collection('user_accounts').doc(userId);
+        const userDoc = await userRef.get();
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const cart = userData.cart || [];
-                const item = cart.find(item => item.id === itemId);
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            const cart = userData.cart || [];
+            const item = cart.find(item => item.id === itemId);
 
-                if (item) {
-                    if (quantity === 0) {
-                        // Remove item if quantity is 0
-                        const updatedCart = cart.filter(item => item.id !== itemId);
-                        await userRef.update({ cart: updatedCart });
-                    } else {
-                        item.quantity = quantity;
-                        item.updatedAt = new Date().toISOString();
-                        await userRef.update({ cart });
-                    }
-                    return true;
+            if (item) {
+                if (quantity === 0) {
+                    // Remove item if quantity is 0
+                    const updatedCart = cart.filter(item => item.id !== itemId);
+                    await userRef.update({ cart: updatedCart });
+                } else {
+                    item.quantity = quantity;
+                    item.updatedAt = new Date().toISOString();
+                    await userRef.update({ cart });
                 }
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                const item = user.cart.find(item => item.id === itemId);
-                if (item) {
-                    if (quantity === 0) {
-                        // Remove item if quantity is 0
-                        user.cart = user.cart.filter(item => item.id !== itemId);
-                    } else {
-                        item.quantity = quantity;
-                        item.updatedAt = new Date().toISOString();
-                    }
-                    return true;
-                }
+                return true;
             }
         }
+        return false;
     } catch (error) {
         console.error('❌ Error updating cart item:', error);
         return false;
     }
-    return false;
 }
 
 async function removeFromCart(userId, itemId) {
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            const userDoc = await userRef.get();
+        const userRef = db.collection('user_accounts').doc(userId);
+        const userDoc = await userRef.get();
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const cart = userData.cart || [];
-                const updatedCart = cart.filter(item => item.id !== itemId);
-                await userRef.update({ cart: updatedCart });
-                return true;
-            }
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                const initialLength = user.cart.length;
-                user.cart = user.cart.filter(item => item.id !== itemId);
-                return user.cart.length < initialLength;
-            }
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            const cart = userData.cart || [];
+            const updatedCart = cart.filter(item => item.id !== itemId);
+            await userRef.update({ cart: updatedCart });
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('❌ Error removing from cart:', error);
         return false;
     }
-    return false;
 }
 
 async function clearCart(userId) {
     try {
-        if (db) {
-            const userRef = db.collection('user_accounts').doc(userId);
-            await userRef.update({ cart: [] });
-            console.log('✅ Cart cleared in Firestore:', userId);
-            return true;
-        } else {
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                user.cart = [];
-                return true;
-            }
-        }
+        const userRef = db.collection('user_accounts').doc(userId);
+        await userRef.update({ cart: [] });
+        console.log('✅ Cart cleared in Firestore:', userId);
+        return true;
     } catch (error) {
         console.error('❌ Error clearing cart:', error);
         return false;
     }
-    return false;
 }
 
 async function getAllUsers() {
     try {
-        if (db) {
-            const snapshot = await db.collection('user_accounts').get();
-            return snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    email: data.email,
-                    phone: data.phone,
-                    country: data.country,
-                    address: data.address,
-                    city: data.city,
-                    state: data.state,
-                    zipCode: data.zipCode,
-                    createdAt: data.createdAt,
-                    status: data.status
-                };
-            });
-        } else {
-            return users.map(u => ({
-                firstName: u.firstName,
-                lastName: u.lastName,
-                email: u.email,
-                phone: u.phone,
-                country: u.country,
-                address: u.address,
-                city: u.city,
-                state: u.state,
-                zipCode: u.zipCode,
-                createdAt: u.createdAt,
-                status: u.status
-            }));
-        }
+        const snapshot = await db.collection('user_accounts').get();
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                phone: data.phone,
+                country: data.country,
+                address: data.address,
+                city: data.city,
+                state: data.state,
+                zipCode: data.zipCode,
+                createdAt: data.createdAt,
+                status: data.status
+            };
+        });
     } catch (error) {
         console.error('❌ Error getting all users:', error);
         return [];
@@ -548,6 +449,5 @@ module.exports = {
     updateCartItem,
     removeFromCart,
     clearCart,
-    getAllUsers,
-    users
+    getAllUsers
 };
