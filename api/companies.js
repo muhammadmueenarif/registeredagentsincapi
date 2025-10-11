@@ -168,9 +168,10 @@ async function handler(req, res) {
                     }
                 } catch (error) {
                     console.error('Error creating company:', error);
+                    console.error('Error details:', error.response?.data || error.message);
                     res.status(500).json({
                         success: false,
-                        error: 'Failed to create company'
+                        error: error.response?.data || error.message || 'Failed to create company'
                     });
                 }
             });
